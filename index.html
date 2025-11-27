@@ -2,25 +2,33 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🚀 Space Defender</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
         body {
             background: linear-gradient(to bottom, #0a0a1a, #1a1a3a);
-            overflow: hidden;
             font-family: 'Segoe UI', sans-serif;
         }
         #gameCanvas {
             display: block;
-            margin: 0 auto;
+            width: 100%;
+            height: 100%;
         }
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             padding: 15px 40px;
-            font-size: 20px;
+            font-size: 18px;
             color: white;
             border-radius: 30px;
             cursor: pointer;
@@ -29,8 +37,8 @@
             font-weight: bold;
             letter-spacing: 2px;
         }
-        .btn:hover {
-            transform: scale(1.1);
+        .btn:hover, .btn:active {
+            transform: scale(1.05);
             box-shadow: 0 0 30px rgba(102, 126, 234, 0.6);
         }
         #startScreen, #gameOverScreen {
@@ -45,32 +53,25 @@
             align-items: center;
             background: rgba(10, 10, 26, 0.95);
             z-index: 10;
+            padding: 20px;
         }
         .hidden { display: none !important; }
-        .star {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            animation: twinkle 2s infinite;
-        }
-        @keyframes twinkle {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-        }
         .title {
-            font-size: 60px;
+            font-size: clamp(30px, 8vw, 60px);
             font-weight: bold;
             background: linear-gradient(135deg, #00f5ff, #ff00ff, #ffff00);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 50px rgba(0, 245, 255, 0.5);
-            margin-bottom: 20px;
+            background-clip: text;
+            margin-bottom: 15px;
+            text-align: center;
         }
         .controls {
             color: #aaa;
-            margin: 30px 0;
+            margin: 20px 0;
             text-align: center;
-            line-height: 2;
+            line-height: 1.8;
+            font-size: clamp(12px, 3vw, 16px);
         }
         .controls span {
             color: #00f5ff;
@@ -78,27 +79,32 @@
         }
         #hud {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: 10px;
+            left: 10px;
+            right: 10px;
             display: flex;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 5px;
             color: white;
-            font-size: 18px;
+            font-size: clamp(10px, 2.5vw, 16px);
             z-index: 5;
             pointer-events: none;
         }
         .hud-item {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px 20px;
-            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 10px;
+            border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .health-bar {
-            width: 200px;
-            height: 20px;
+            width: clamp(60px, 15vw, 150px);
+            height: 12px;
             background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
+            border-radius: 6px;
             overflow: hidden;
         }
         .health-fill {
@@ -108,6 +114,133 @@
         }
         .score { color: #ffff00; font-weight: bold; }
         .wave { color: #00f5ff; font-weight: bold; }
+
+        /* Мобильное управление */
+        #mobileControls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        #joystickArea {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 140px;
+            height: 140px;
+            pointer-events: auto;
+        }
+        
+        #joystickBase {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 3px solid rgba(0, 245, 255, 0.5);
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        #joystickThumb {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #00f5ff, #0066ff);
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
+        }
+        
+        #fireButton {
+            position: absolute;
+            right: 20px;
+            bottom: 30px;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ff4444, #cc0000);
+            border: 4px solid rgba(255, 100, 100, 0.6);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+            transition: transform 0.1s;
+        }
+        
+        #fireButton:active {
+            transform: scale(0.9);
+        }
+        
+        #pauseButton {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            z-index: 15;
+            cursor: pointer;
+        }
+        
+        /* Desktop - скрыть мобильное управление */
+        @media (min-width: 1024px) and (pointer: fine) {
+            #mobileControls, #pauseButton {
+                display: none;
+            }
+            .mobile-hint {
+                display: none;
+            }
+        }
+        
+        /* Mobile - показать подсказку */
+        @media (max-width: 1023px), (pointer: coarse) {
+            .desktop-hint {
+                display: none;
+            }
+        }
+
+        .game-over-text {
+            font-size: clamp(30px, 8vw, 50px);
+            margin-bottom: 15px;
+        }
+        .game-over-score {
+            color: #ffff00;
+            font-size: clamp(20px, 5vw, 30px);
+            margin-bottom: 8px;
+        }
+        .game-over-wave {
+            color: #00f5ff;
+            font-size: clamp(16px, 4vw, 24px);
+            margin-bottom: 8px;
+        }
+        .game-over-high {
+            color: #ff00ff;
+            font-size: clamp(16px, 4vw, 24px);
+            margin-bottom: 25px;
+        }
+        .subtitle {
+            color: #888;
+            font-size: clamp(12px, 3vw, 18px);
+            margin-bottom: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -117,41 +250,58 @@
             ❤️ <div class="health-bar"><div class="health-fill" id="healthBar"></div></div>
         </div>
         <div class="hud-item">
-            🎯 Очки: <span class="score" id="scoreDisplay">0</span>
+            🎯 <span class="score" id="scoreDisplay">0</span>
         </div>
         <div class="hud-item">
-            🌊 Волна: <span class="wave" id="waveDisplay">1</span>
+            🌊 <span class="wave" id="waveDisplay">1</span>
         </div>
         <div class="hud-item">
             ⚡ <span id="powerupDisplay">-</span>
         </div>
     </div>
 
+    <!-- Кнопка паузы -->
+    <div id="pauseButton" class="hidden" onclick="togglePause()">⏸️</div>
+
     <!-- Стартовый экран -->
     <div id="startScreen">
         <div class="title">🚀 SPACE DEFENDER</div>
-        <p style="color: #888; font-size: 18px; margin-bottom: 10px;">Защити галактику от инопланетного вторжения!</p>
-        <div class="controls">
+        <p class="subtitle">Защити галактику от инопланетного вторжения!</p>
+        <div class="controls desktop-hint">
             <span>← → ↑ ↓</span> или <span>WASD</span> — движение<br>
             <span>ПРОБЕЛ</span> — стрельба<br>
             <span>P</span> — пауза
+        </div>
+        <div class="controls mobile-hint">
+            🕹️ <span>Джойстик</span> слева — движение<br>
+            🔴 <span>Кнопка</span> справа — стрельба<br>
+            ⏸️ — пауза
         </div>
         <button class="btn" onclick="startGame()">🎮 ИГРАТЬ</button>
     </div>
 
     <!-- Экран Game Over -->
     <div id="gameOverScreen" class="hidden">
-        <div style="font-size: 50px; margin-bottom: 20px;">💥 GAME OVER 💥</div>
-        <div style="color: #ffff00; font-size: 30px; margin-bottom: 10px;">
+        <div class="game-over-text">💥 GAME OVER 💥</div>
+        <div class="game-over-score">
             Очки: <span id="finalScore">0</span>
         </div>
-        <div style="color: #00f5ff; font-size: 24px; margin-bottom: 10px;">
+        <div class="game-over-wave">
             Волна: <span id="finalWave">1</span>
         </div>
-        <div style="color: #ff00ff; font-size: 24px; margin-bottom: 30px;">
+        <div class="game-over-high">
             🏆 Рекорд: <span id="highScore">0</span>
         </div>
         <button class="btn" onclick="startGame()">🔄 ЗАНОВО</button>
+    </div>
+
+    <!-- Мобильное управление -->
+    <div id="mobileControls" class="hidden">
+        <div id="joystickArea">
+            <div id="joystickBase"></div>
+            <div id="joystickThumb"></div>
+        </div>
+        <div id="fireButton">🔥</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -159,6 +309,11 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+
+        // Определение мобильного устройства
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         ('ontouchstart' in window) || 
+                         (navigator.maxTouchPoints > 0);
 
         // Размеры холста
         function resizeCanvas() {
@@ -178,70 +333,83 @@
         let currentPowerup = null;
         let powerupTimer = 0;
 
+        // Мобильное управление
+        let joystickActive = false;
+        let joystickX = 0;
+        let joystickY = 0;
+        let firePressed = false;
+        let autoFire = false;
+
         // Загрузка рекорда
         highScore = localStorage.getItem('spaceDefenderHighScore') || 0;
+
+        // Масштаб для мобильных
+        function getScale() {
+            return Math.min(canvas.width / 800, canvas.height / 600, 1);
+        }
 
         // Класс игрока
         class Player {
             constructor() {
-                this.width = 50;
-                this.height = 60;
+                const scale = getScale();
+                this.width = 50 * scale;
+                this.height = 60 * scale;
                 this.x = canvas.width / 2 - this.width / 2;
-                this.y = canvas.height - 100;
-                this.speed = 7;
+                this.y = canvas.height - (isMobile ? 250 : 100);
+                this.speed = 6 * scale;
                 this.health = 100;
                 this.maxHealth = 100;
-                this.fireRate = 150;
+                this.fireRate = isMobile ? 120 : 150;
                 this.bulletDamage = 25;
-                this.bulletSpeed = 12;
+                this.bulletSpeed = 10 * scale;
                 this.tripleShot = false;
             }
 
             draw() {
-                // Тело корабля
+                const scale = getScale();
                 ctx.save();
                 ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
                 
                 // Свечение двигателя
-                const gradient = ctx.createRadialGradient(0, 30, 5, 0, 30, 30);
+                const gradient = ctx.createRadialGradient(0, 30 * scale, 5 * scale, 0, 30 * scale, 30 * scale);
                 gradient.addColorStop(0, '#00f5ff');
                 gradient.addColorStop(0.5, '#0066ff');
                 gradient.addColorStop(1, 'transparent');
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.ellipse(0, 35, 15 + Math.random() * 5, 25 + Math.random() * 10, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, 35 * scale, (15 + Math.random() * 5) * scale, (25 + Math.random() * 10) * scale, 0, 0, Math.PI * 2);
                 ctx.fill();
 
                 // Корпус корабля
                 ctx.fillStyle = '#4a5568';
                 ctx.beginPath();
-                ctx.moveTo(0, -30);
-                ctx.lineTo(-25, 25);
-                ctx.lineTo(-10, 20);
-                ctx.lineTo(-10, 30);
-                ctx.lineTo(10, 30);
-                ctx.lineTo(10, 20);
-                ctx.lineTo(25, 25);
+                ctx.moveTo(0, -30 * scale);
+                ctx.lineTo(-25 * scale, 25 * scale);
+                ctx.lineTo(-10 * scale, 20 * scale);
+                ctx.lineTo(-10 * scale, 30 * scale);
+                ctx.lineTo(10 * scale, 30 * scale);
+                ctx.lineTo(10 * scale, 20 * scale);
+                ctx.lineTo(25 * scale, 25 * scale);
                 ctx.closePath();
                 ctx.fill();
 
                 // Кабина
-                const cockpitGradient = ctx.createLinearGradient(0, -20, 0, 10);
+                const cockpitGradient = ctx.createLinearGradient(0, -20 * scale, 0, 10 * scale);
                 cockpitGradient.addColorStop(0, '#00f5ff');
                 cockpitGradient.addColorStop(1, '#0066ff');
                 ctx.fillStyle = cockpitGradient;
                 ctx.beginPath();
-                ctx.ellipse(0, -5, 10, 15, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, -5 * scale, 10 * scale, 15 * scale, 0, 0, Math.PI * 2);
                 ctx.fill();
 
                 // Детали
                 ctx.strokeStyle = '#00f5ff';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 2 * scale;
                 ctx.beginPath();
-                ctx.moveTo(-20, 15);
-                ctx.lineTo(-30, 25);
-                ctx.moveTo(20, 15);
-                ctx.lineTo(30, 25);
+                ctx.moveTo(-20 * scale, 15 * scale);
+                ctx.lineTo(-30 * scale, 25 * scale);
+                ctx.moveTo(20 * scale, 15 * scale);
+                ctx.lineTo(30 * scale, 25 * scale);
                 ctx.stroke();
 
                 ctx.restore();
@@ -251,20 +419,28 @@
                     ctx.strokeStyle = `rgba(0, 245, 255, ${0.5 + Math.sin(Date.now() / 100) * 0.3})`;
                     ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 45, 0, Math.PI * 2);
+                    ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 45 * scale, 0, Math.PI * 2);
                     ctx.stroke();
                 }
             }
 
             update() {
+                // Клавиатурное управление
                 if (keys['ArrowLeft'] || keys['KeyA']) this.x -= this.speed;
                 if (keys['ArrowRight'] || keys['KeyD']) this.x += this.speed;
                 if (keys['ArrowUp'] || keys['KeyW']) this.y -= this.speed;
                 if (keys['ArrowDown'] || keys['KeyS']) this.y += this.speed;
 
+                // Мобильное управление (джойстик)
+                if (joystickActive) {
+                    this.x += joystickX * this.speed;
+                    this.y += joystickY * this.speed;
+                }
+
                 // Границы
+                const bottomLimit = isMobile ? canvas.height - 220 : canvas.height - this.height;
                 this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
-                this.y = Math.max(canvas.height / 2, Math.min(canvas.height - this.height, this.y));
+                this.y = Math.max(50, Math.min(bottomLimit, this.y));
             }
 
             shoot() {
@@ -277,8 +453,8 @@
 
                 if (this.tripleShot) {
                     bullets.push(new Bullet(bulletX, bulletY, 0, -this.bulletSpeed, this.bulletDamage));
-                    bullets.push(new Bullet(bulletX, bulletY, -3, -this.bulletSpeed, this.bulletDamage));
-                    bullets.push(new Bullet(bulletX, bulletY, 3, -this.bulletSpeed, this.bulletDamage));
+                    bullets.push(new Bullet(bulletX, bulletY, -2, -this.bulletSpeed, this.bulletDamage));
+                    bullets.push(new Bullet(bulletX, bulletY, 2, -this.bulletSpeed, this.bulletDamage));
                 } else {
                     bullets.push(new Bullet(bulletX, bulletY, 0, -this.bulletSpeed, this.bulletDamage));
                 }
@@ -292,7 +468,8 @@
                 this.y = y;
                 this.vx = vx;
                 this.vy = vy;
-                this.radius = isEnemy ? 5 : 4;
+                const scale = getScale();
+                this.radius = (isEnemy ? 5 : 4) * scale;
                 this.damage = damage;
                 this.isEnemy = isEnemy;
             }
@@ -322,39 +499,40 @@
         class Enemy {
             constructor(type = 'basic') {
                 this.type = type;
-                this.x = Math.random() * (canvas.width - 50);
-                this.y = -60;
+                const scale = getScale();
+                this.x = Math.random() * (canvas.width - 50 * scale);
+                this.y = -60 * scale;
                 
                 switch(type) {
                     case 'basic':
-                        this.width = 40;
-                        this.height = 40;
+                        this.width = 40 * scale;
+                        this.height = 40 * scale;
                         this.health = 50;
-                        this.speed = 2 + wave * 0.2;
+                        this.speed = (2 + wave * 0.2) * scale;
                         this.score = 100;
                         this.color = '#ff6b6b';
                         break;
                     case 'fast':
-                        this.width = 30;
-                        this.height = 30;
+                        this.width = 30 * scale;
+                        this.height = 30 * scale;
                         this.health = 30;
-                        this.speed = 4 + wave * 0.3;
+                        this.speed = (3.5 + wave * 0.25) * scale;
                         this.score = 150;
                         this.color = '#feca57';
                         break;
                     case 'tank':
-                        this.width = 60;
-                        this.height = 60;
+                        this.width = 55 * scale;
+                        this.height = 55 * scale;
                         this.health = 150;
-                        this.speed = 1 + wave * 0.1;
+                        this.speed = (1 + wave * 0.1) * scale;
                         this.score = 300;
                         this.color = '#5f27cd';
                         break;
                     case 'boss':
-                        this.width = 100;
-                        this.height = 80;
-                        this.health = 500 + wave * 100;
-                        this.speed = 1;
+                        this.width = 90 * scale;
+                        this.height = 70 * scale;
+                        this.health = 400 + wave * 80;
+                        this.speed = 1 * scale;
                         this.score = 1000;
                         this.color = '#ff0066';
                         this.x = canvas.width / 2 - this.width / 2;
@@ -367,21 +545,19 @@
             }
 
             draw() {
+                const scale = getScale();
                 ctx.save();
                 ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
 
-                // Свечение
                 ctx.shadowColor = this.color;
-                ctx.shadowBlur = 20;
+                ctx.shadowBlur = 15;
 
-                // Тело врага
                 const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.width / 2);
                 gradient.addColorStop(0, this.color);
                 gradient.addColorStop(1, '#1a1a3a');
                 ctx.fillStyle = gradient;
 
                 if (this.type === 'boss') {
-                    // Босс - сложная форма
                     ctx.beginPath();
                     ctx.moveTo(0, -this.height / 2);
                     ctx.lineTo(this.width / 2, 0);
@@ -391,41 +567,37 @@
                     ctx.closePath();
                     ctx.fill();
 
-                    // Глаза босса
                     ctx.fillStyle = '#ff0000';
                     ctx.beginPath();
-                    ctx.arc(-15, -10, 8, 0, Math.PI * 2);
-                    ctx.arc(15, -10, 8, 0, Math.PI * 2);
+                    ctx.arc(-12 * scale, -8 * scale, 6 * scale, 0, Math.PI * 2);
+                    ctx.arc(12 * scale, -8 * scale, 6 * scale, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
-                    // Обычные враги
                     ctx.beginPath();
                     ctx.arc(0, 0, this.width / 2, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Глаза
                     ctx.fillStyle = '#fff';
                     ctx.beginPath();
-                    ctx.arc(-8, -5, 5, 0, Math.PI * 2);
-                    ctx.arc(8, -5, 5, 0, Math.PI * 2);
+                    ctx.arc(-6 * scale, -4 * scale, 4 * scale, 0, Math.PI * 2);
+                    ctx.arc(6 * scale, -4 * scale, 4 * scale, 0, Math.PI * 2);
                     ctx.fill();
 
                     ctx.fillStyle = '#000';
                     ctx.beginPath();
-                    ctx.arc(-8, -3, 3, 0, Math.PI * 2);
-                    ctx.arc(8, -3, 3, 0, Math.PI * 2);
+                    ctx.arc(-6 * scale, -2 * scale, 2 * scale, 0, Math.PI * 2);
+                    ctx.arc(6 * scale, -2 * scale, 2 * scale, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
                 ctx.shadowBlur = 0;
                 ctx.restore();
 
-                // Полоска здоровья для танков и боссов
                 if (this.type === 'tank' || this.type === 'boss') {
                     const barWidth = this.width;
-                    const barHeight = 5;
+                    const barHeight = 4 * scale;
                     const barX = this.x;
-                    const barY = this.y - 10;
+                    const barY = this.y - 8 * scale;
 
                     ctx.fillStyle = '#333';
                     ctx.fillRect(barX, barY, barWidth, barHeight);
@@ -436,38 +608,37 @@
             }
 
             update() {
+                const scale = getScale();
                 this.y += this.speed;
 
-                // Движение по паттерну
                 if (this.type === 'fast') {
-                    this.x += Math.sin(this.y / 30) * 3;
+                    this.x += Math.sin(this.y / 30) * 2.5 * scale;
                 } else if (this.type === 'boss') {
-                    this.x += Math.sin(Date.now() / 500) * 2;
-                    if (this.y > 50) this.y = 50;
+                    this.x += Math.sin(Date.now() / 500) * 1.5 * scale;
+                    if (this.y > 50 * scale) this.y = 50 * scale;
                 }
 
-                // Стрельба врагов
                 this.shootTimer++;
-                if (this.type === 'boss' && this.shootTimer > 30) {
+                if (this.type === 'boss' && this.shootTimer > 40) {
                     this.shootTimer = 0;
                     for (let i = -2; i <= 2; i++) {
                         bullets.push(new Bullet(
                             this.x + this.width / 2,
                             this.y + this.height,
-                            i * 2,
-                            5,
-                            20,
+                            i * 1.5 * scale,
+                            4 * scale,
+                            15,
                             true
                         ));
                     }
-                } else if (this.type === 'tank' && this.shootTimer > 60) {
+                } else if (this.type === 'tank' && this.shootTimer > 70) {
                     this.shootTimer = 0;
                     bullets.push(new Bullet(
                         this.x + this.width / 2,
                         this.y + this.height,
                         0,
-                        6,
-                        15,
+                        5 * scale,
+                        12,
                         true
                     ));
                 }
@@ -481,11 +652,12 @@
             constructor(x, y, color) {
                 this.x = x;
                 this.y = y;
-                this.vx = (Math.random() - 0.5) * 10;
-                this.vy = (Math.random() - 0.5) * 10;
+                const scale = getScale();
+                this.vx = (Math.random() - 0.5) * 8 * scale;
+                this.vy = (Math.random() - 0.5) * 8 * scale;
                 this.life = 1;
-                this.decay = 0.02 + Math.random() * 0.02;
-                this.size = 3 + Math.random() * 5;
+                this.decay = 0.025 + Math.random() * 0.025;
+                this.size = (2 + Math.random() * 4) * scale;
                 this.color = color;
             }
 
@@ -510,14 +682,16 @@
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.width = 30;
-                this.height = 30;
-                this.speed = 2;
+                const scale = getScale();
+                this.width = 30 * scale;
+                this.height = 30 * scale;
+                this.speed = 2 * scale;
                 this.type = ['health', 'triple', 'shield', 'rapid'][Math.floor(Math.random() * 4)];
                 this.rotation = 0;
             }
 
             draw() {
+                const scale = getScale();
                 ctx.save();
                 ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
                 this.rotation += 0.05;
@@ -531,18 +705,17 @@
                     case 'rapid': emoji = '⚡'; break;
                 }
 
-                ctx.font = '25px Arial';
+                ctx.font = `${20 * scale}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(emoji, 0, 0);
 
                 ctx.restore();
 
-                // Свечение
                 ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + Math.sin(Date.now() / 100) * 0.3})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 20, 0, Math.PI * 2);
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 18 * scale, 0, Math.PI * 2);
                 ctx.stroke();
             }
 
@@ -554,12 +727,13 @@
         // Звезды фона
         function createStars() {
             stars = [];
-            for (let i = 0; i < 150; i++) {
+            const count = Math.min(100, Math.floor(canvas.width * canvas.height / 10000));
+            for (let i = 0; i < count; i++) {
                 stars.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
                     size: Math.random() * 2,
-                    speed: 0.5 + Math.random() * 2
+                    speed: 0.3 + Math.random() * 1.5
                 });
             }
         }
@@ -567,7 +741,7 @@
         function drawStars() {
             ctx.fillStyle = '#fff';
             stars.forEach(star => {
-                ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+                ctx.globalAlpha = 0.4 + Math.random() * 0.4;
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -581,18 +755,16 @@
             ctx.globalAlpha = 1;
         }
 
-        // Создание взрыва
-        function createExplosion(x, y, color, count = 20) {
+        function createExplosion(x, y, color, count = 15) {
             for (let i = 0; i < count; i++) {
                 particles.push(new Particle(x, y, color));
             }
         }
 
-        // Спавн врагов
         function spawnEnemies() {
             waveTimer++;
             
-            const spawnRate = Math.max(30, 100 - wave * 5);
+            const spawnRate = Math.max(40, 100 - wave * 4);
             
             if (waveTimer % spawnRate === 0) {
                 const rand = Math.random();
@@ -605,8 +777,7 @@
                 }
             }
 
-            // Босс каждые 5 волн
-            if (enemiesKilled >= 10 + wave * 5) {
+            if (enemiesKilled >= 10 + wave * 4) {
                 if (wave % 5 === 0 && !enemies.some(e => e.type === 'boss')) {
                     enemies.push(new Enemy('boss'));
                 }
@@ -616,9 +787,7 @@
             }
         }
 
-        // Проверка столкновений
         function checkCollisions() {
-            // Пули игрока vs враги
             bullets.forEach((bullet, bi) => {
                 if (bullet.isEnemy) return;
                 
@@ -629,16 +798,15 @@
                         enemy.health -= bullet.damage;
                         bullets.splice(bi, 1);
                         
-                        createExplosion(bullet.x, bullet.y, enemy.color, 5);
+                        createExplosion(bullet.x, bullet.y, enemy.color, 4);
                         
                         if (enemy.health <= 0) {
-                            createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 30);
+                            createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 20);
                             score += enemy.score;
                             enemiesKilled++;
                             document.getElementById('scoreDisplay').textContent = score;
                             
-                            // Шанс дропа бонуса
-                            if (Math.random() < 0.2) {
+                            if (Math.random() < 0.25) {
                                 powerups.push(new Powerup(enemy.x, enemy.y));
                             }
                             
@@ -648,7 +816,6 @@
                 });
             });
 
-            // Вражеские пули vs игрок
             bullets.forEach((bullet, bi) => {
                 if (!bullet.isEnemy) return;
                 
@@ -660,7 +827,7 @@
                         updateHealthBar();
                     }
                     bullets.splice(bi, 1);
-                    createExplosion(bullet.x, bullet.y, '#ff4444', 5);
+                    createExplosion(bullet.x, bullet.y, '#ff4444', 4);
                     
                     if (player.health <= 0) {
                         gameOver();
@@ -668,7 +835,6 @@
                 }
             });
 
-            // Враги vs игрок
             enemies.forEach((enemy, ei) => {
                 if (player.x < enemy.x + enemy.width &&
                     player.x + player.width > enemy.x &&
@@ -676,10 +842,10 @@
                     player.y + player.height > enemy.y) {
                     
                     if (currentPowerup !== 'shield') {
-                        player.health -= 30;
+                        player.health -= 25;
                         updateHealthBar();
                     }
-                    createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 20);
+                    createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 15);
                     enemies.splice(ei, 1);
                     
                     if (player.health <= 0) {
@@ -688,7 +854,6 @@
                 }
             });
 
-            // Бонусы vs игрок
             powerups.forEach((powerup, pi) => {
                 if (player.x < powerup.x + powerup.width &&
                     player.x + player.width > powerup.x &&
@@ -701,7 +866,6 @@
             });
         }
 
-        // Применить бонус
         function applyPowerup(type) {
             switch(type) {
                 case 'health':
@@ -711,16 +875,16 @@
                 case 'triple':
                     player.tripleShot = true;
                     currentPowerup = 'triple';
-                    powerupTimer = 500;
+                    powerupTimer = 400;
                     break;
                 case 'shield':
                     currentPowerup = 'shield';
-                    powerupTimer = 400;
+                    powerupTimer = 350;
                     break;
                 case 'rapid':
                     player.fireRate = 50;
                     currentPowerup = 'rapid';
-                    powerupTimer = 500;
+                    powerupTimer = 400;
                     break;
             }
             updatePowerupDisplay();
@@ -729,51 +893,49 @@
         function updatePowerupDisplay() {
             const display = document.getElementById('powerupDisplay');
             switch(currentPowerup) {
-                case 'triple': display.textContent = '🔱 Тройной'; break;
-                case 'shield': display.textContent = '🛡️ Щит'; break;
-                case 'rapid': display.textContent = '⚡ Скорость'; break;
+                case 'triple': display.textContent = '🔱'; break;
+                case 'shield': display.textContent = '🛡️'; break;
+                case 'rapid': display.textContent = '⚡⚡'; break;
                 default: display.textContent = '-';
             }
         }
 
         function updateHealthBar() {
-            document.getElementById('healthBar').style.width = `${player.health}%`;
+            document.getElementById('healthBar').style.width = `${Math.max(0, player.health)}%`;
         }
 
-        // Очистка объектов за экраном
         function cleanupObjects() {
-            bullets = bullets.filter(b => b.y > -10 && b.y < canvas.height + 10);
+            bullets = bullets.filter(b => b.y > -10 && b.y < canvas.height + 10 && b.x > -10 && b.x < canvas.width + 10);
             enemies = enemies.filter(e => e.y < canvas.height + 100);
             particles = particles.filter(p => p.life > 0);
             powerups = powerups.filter(p => p.y < canvas.height + 50);
 
-            // Таймер бонусов
             if (powerupTimer > 0) {
                 powerupTimer--;
                 if (powerupTimer <= 0) {
                     player.tripleShot = false;
-                    player.fireRate = 150;
+                    player.fireRate = isMobile ? 120 : 150;
                     currentPowerup = null;
                     updatePowerupDisplay();
                 }
             }
         }
 
-        // Игровой цикл
         function gameLoop() {
             if (!gameRunning) return;
 
             if (!paused) {
-                // Очистка
                 ctx.fillStyle = '#0a0a1a';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Звезды
                 drawStars();
 
-                // Обновление
                 player.update();
-                if (keys['Space']) player.shoot();
+                
+                // Стрельба
+                if (keys['Space'] || firePressed || autoFire) {
+                    player.shoot();
+                }
 
                 bullets.forEach(b => b.update());
                 enemies.forEach(e => e.update());
@@ -784,30 +946,41 @@
                 checkCollisions();
                 cleanupObjects();
 
-                // Отрисовка
                 powerups.forEach(p => p.draw());
                 bullets.forEach(b => b.draw());
                 enemies.forEach(e => e.draw());
                 particles.forEach(p => p.draw());
                 player.draw();
             } else {
-                // Пауза
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#fff';
-                ctx.font = '50px Arial';
+                ctx.font = `${Math.min(50, canvas.width / 10)}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.fillText('⏸️ ПАУЗА', canvas.width / 2, canvas.height / 2);
+                ctx.font = `${Math.min(20, canvas.width / 25)}px Arial`;
+                ctx.fillText('Нажмите для продолжения', canvas.width / 2, canvas.height / 2 + 50);
             }
 
             requestAnimationFrame(gameLoop);
         }
 
-        // Начало игры
+        function togglePause() {
+            if (gameRunning) {
+                paused = !paused;
+                document.getElementById('pauseButton').textContent = paused ? '▶️' : '⏸️';
+            }
+        }
+
         function startGame() {
             document.getElementById('startScreen').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('pauseButton').classList.remove('hidden');
+            
+            if (isMobile) {
+                document.getElementById('mobileControls').classList.remove('hidden');
+            }
 
             player = new Player();
             bullets = [];
@@ -828,15 +1001,17 @@
             document.getElementById('scoreDisplay').textContent = '0';
             document.getElementById('waveDisplay').textContent = '1';
             document.getElementById('healthBar').style.width = '100%';
+            document.getElementById('pauseButton').textContent = '⏸️';
             updatePowerupDisplay();
 
             gameLoop();
         }
 
-        // Конец игры
         function gameOver() {
             gameRunning = false;
             document.getElementById('hud').classList.add('hidden');
+            document.getElementById('mobileControls').classList.add('hidden');
+            document.getElementById('pauseButton').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.remove('hidden');
             document.getElementById('finalScore').textContent = score;
             document.getElementById('finalWave').textContent = wave;
@@ -848,12 +1023,12 @@
             document.getElementById('highScore').textContent = highScore;
         }
 
-        // Управление
+        // Клавиатурное управление
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
             
             if (e.code === 'KeyP' && gameRunning) {
-                paused = !paused;
+                togglePause();
             }
             
             if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
@@ -864,6 +1039,91 @@
         document.addEventListener('keyup', (e) => {
             keys[e.code] = false;
         });
+
+        // Мобильное управление - Джойстик
+        const joystickArea = document.getElementById('joystickArea');
+        const joystickThumb = document.getElementById('joystickThumb');
+        const joystickBase = document.getElementById('joystickBase');
+
+        function handleJoystickMove(clientX, clientY) {
+            const rect = joystickArea.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            let deltaX = clientX - centerX;
+            let deltaY = clientY - centerY;
+            
+            const maxRadius = 50;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            if (distance > maxRadius) {
+                deltaX = (deltaX / distance) * maxRadius;
+                deltaY = (deltaY / distance) * maxRadius;
+            }
+            
+            joystickThumb.style.left = `calc(50% + ${deltaX}px)`;
+            joystickThumb.style.top = `calc(50% + ${deltaY}px)`;
+            
+            joystickX = deltaX / maxRadius;
+            joystickY = deltaY / maxRadius;
+        }
+
+        function resetJoystick() {
+            joystickThumb.style.left = '50%';
+            joystickThumb.style.top = '50%';
+            joystickX = 0;
+            joystickY = 0;
+            joystickActive = false;
+        }
+
+        joystickArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            joystickActive = true;
+            const touch = e.touches[0];
+            handleJoystickMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        joystickArea.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (joystickActive) {
+                const touch = e.touches[0];
+                handleJoystickMove(touch.clientX, touch.clientY);
+            }
+        }, { passive: false });
+
+        joystickArea.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            resetJoystick();
+        }, { passive: false });
+
+        joystickArea.addEventListener('touchcancel', (e) => {
+            resetJoystick();
+        });
+
+        // Кнопка стрельбы
+        const fireButton = document.getElementById('fireButton');
+        
+        fireButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            firePressed = true;
+            autoFire = true;
+        }, { passive: false });
+
+        fireButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            firePressed = false;
+            autoFire = false;
+        }, { passive: false });
+
+        fireButton.addEventListener('touchcancel', (e) => {
+            firePressed = false;
+            autoFire = false;
+        });
+
+        // Предотвращение масштабирования
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
 
         // Начальные звезды для меню
         createStars();

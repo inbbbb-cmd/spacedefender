@@ -403,7 +403,7 @@
   </style>
 </head>
 <body>
-  <div id="versionBadge">v3.3</div>
+  <div id="versionBadge"></div>
   <div id="waveBanner"></div>
   <div id="comboPopup"></div>
 
@@ -497,6 +497,8 @@
   <script>
     'use strict';
 
+    const GAME_VERSION = '3.3';
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d', { alpha: false });
 
@@ -537,6 +539,10 @@
 
     const elWaveBanner = document.getElementById('waveBanner');
     const elComboPopup = document.getElementById('comboPopup');
+    const elVersionBadge = document.getElementById('versionBadge');
+
+    if (elVersionBadge) elVersionBadge.textContent = 'v' + GAME_VERSION;
+    document.title = `🚀 Space Defender v${GAME_VERSION}`;
 
     // Mobile controls
     const joystickArea = document.getElementById('joystickArea');
@@ -1564,7 +1570,7 @@
         if (player.x < p.x + p.width &&
             player.x + player.width > p.x &&
             player.y < p.y + p.height &&
-            player.y + player.height > p.y) {
+            player.y + p.height > p.y) {
 
           applyPowerup(p.type);
           powerups.splice(pi, 1);
@@ -1690,6 +1696,33 @@
       elPauseButton.textContent = paused ? '▶️' : '⏸️';
     }
 
+    function sendGameResult() {
+      const payload = {
+        type: 'space_defender_result',
+        version: GAME_VERSION,
+        score,
+        wave,
+        maxCombo,
+        highScore,
+        timestamp: Date.now()
+      };
+
+      try {
+        // Telegram WebApp вариант
+        if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.sendData === 'function') {
+          window.Telegram.WebApp.sendData(JSON.stringify(payload));
+        }
+        // Встраивание в iframe/виджет — шлём в родителя
+        else if (window.parent && window.parent !== window && typeof window.parent.postMessage === 'function') {
+          window.parent.postMessage(payload, '*');
+        } else {
+          console.log('Game result payload:', payload);
+        }
+      } catch (err) {
+        console.error('Error sending game result:', err);
+      }
+    }
+
     function startGame() {
       gameRunning = true;
       paused = false;
@@ -1772,6 +1805,9 @@
 
       elHighScore.textContent = String(highScore);
       elStartHighScore.textContent = `🏆 Рекорд: ${highScore}`;
+
+      // отправляем результат в бота / родителя
+      sendGameResult();
     }
 
     window.startGame = startGame;
@@ -2033,7 +2069,7 @@
     updateEnergyUI();
     requestAnimationFrame(loop);
 
-    console.log('🚀 Space Defender v3.3 loaded with mobile buttons');
+    console.log('🚀 Space Defender v' + GAME_VERSION + ' loaded with mobile buttons');
     console.log('Platform:', isMobile ? 'Mobile' : 'Desktop');
   </script>
 </body>

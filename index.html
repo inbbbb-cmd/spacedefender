@@ -390,7 +390,7 @@
     </div>
   </div>
 
-  <div id="pauseButton" class="hidden" onclick="togglePause()">⏸️</div>
+  <div id="pauseButton" class="hidden" onclick="togglePause()" title="Пауза">⏸️</div>
 
   <div id="startScreen" class="fade-in">
     <div class="title">🚀 SPACE DEFENDER</div>
@@ -444,9 +444,16 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d', { alpha: false });
 
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      ('ontouchstart' in window) ||
-      (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+    const isMobile = (() => {
+      // Treat any coarse-pointer / touch-capable device as "mobile" for controls.
+      // This fixes iPad/Android tablets where innerWidth can be >= 1024 and keyboard is absent.
+      const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      const touchCapable = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      return coarse || touchCapable || uaMobile;
+    })();
+
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // --- DOM refs ---
     const elStartScreen = document.getElementById('startScreen');
@@ -532,6 +539,11 @@
     let joystickY = 0;
     let firePressed = false;
     let novaPressed = false;
+
+    // Track touch identifiers so multitouch works (move + fire at the same time)
+    let joystickTouchId = null;
+    let fireTouchId = null;
+    let novaTouchId = null;
 
     // Perf guards
     const PERF = {
@@ -1667,6 +1679,22 @@
       gameRunning = true;
       paused = false;
 
+      // Reset mobile touch tracking (important when restarting)
+      joystickTouchId = null;
+      fireTouchId = null;
+      novaTouchId = null;
+      joystickActive = false;
+      joystickX = 0;
+      joystickY = 0;
+      firePressed = false;
+      novaPressed = false;
+      fireButton.classList.remove('active');
+      novaButton.classList.remove('active');
+      // keep thumb centered
+      joystickThumb.style.left = '50%';
+      joystickThumb.style.top = '50%';
+      joystickThumb.classList.remove('active');
+
       player = new Player();
       bullets = [];
       enemies = [];
@@ -1763,6 +1791,13 @@
       if (document.hidden && gameRunning && !paused) togglePause();
     });
 
+    // Pause button: add touch handler to avoid any click delay on some mobile browsers
+    elPauseButton.addEventListener('touchstart', (e) => {
+      if (!isMobile) return;
+      e.preventDefault();
+      togglePause();
+    }, { passive: false });
+
     // Mobile joystick
     function handleJoystickMove(clientX, clientY) {
       const rect = joystickArea.getBoundingClientRect();
@@ -1793,42 +1828,83 @@
       joystickX = 0;
       joystickY = 0;
       joystickActive = false;
+      joystickTouchId = null;
     }
 
+    function findTouchById(touchList, id) {
+      for (let i = 0; i < touchList.length; i++) {
+        if (touchList[i].identifier === id) return touchList[i];
+      }
+      return null;
+    }
+
+    // JOYSTICK: lock to first finger that touched it
     joystickArea.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      if (joystickTouchId !== null) return;
+      const t = e.changedTouches[0];
+      joystickTouchId = t.identifier;
       joystickActive = true;
       joystickThumb.classList.add('active');
-      handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
+      handleJoystickMove(t.clientX, t.clientY);
     }, { passive: false });
 
     joystickArea.addEventListener('touchmove', (e) => {
       e.preventDefault();
-      if (joystickActive) handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
+      if (!joystickActive || joystickTouchId === null) return;
+      const t = findTouchById(e.touches, joystickTouchId);
+      if (t) handleJoystickMove(t.clientX, t.clientY);
     }, { passive: false });
 
-    joystickArea.addEventListener('touchend', (e) => { e.preventDefault(); resetJoystick(); }, { passive: false });
-    joystickArea.addEventListener('touchcancel', resetJoystick);
+    joystickArea.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (joystickTouchId === null) return;
+      // If our joystick finger ended -> reset
+      const ended = findTouchById(e.changedTouches, joystickTouchId);
+      if (ended) resetJoystick();
+    }, { passive: false });
 
+    joystickArea.addEventListener('touchcancel', (e) => {
+      if (joystickTouchId === null) return;
+      const ended = findTouchById(e.changedTouches, joystickTouchId);
+      if (ended) resetJoystick();
+    }, { passive: false });
+
+    // FIRE: lock to finger, allow holding while moving joystick 
     fireButton.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      if (fireTouchId !== null) return;
+      const t = e.changedTouches[0];
+      fireTouchId = t.identifier;
       firePressed = true;
       fireButton.classList.add('active');
     }, { passive: false });
 
     fireButton.addEventListener('touchend', (e) => {
       e.preventDefault();
+      if (fireTouchId === null) return;
+      const ended = findTouchById(e.changedTouches, fireTouchId);
+      if (!ended) return;
+      fireTouchId = null;
       firePressed = false;
       fireButton.classList.remove('active');
     }, { passive: false });
 
-    fireButton.addEventListener('touchcancel', () => {
+    fireButton.addEventListener('touchcancel', (e) => {
+      if (fireTouchId === null) return;
+      const ended = findTouchById(e.changedTouches, fireTouchId);
+      if (!ended) return;
+      fireTouchId = null;
       firePressed = false;
       fireButton.classList.remove('active');
-    });
+    }, { passive: false });
 
+    // NOVA: lock to finger
     novaButton.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      if (novaTouchId !== null) return;
+      const t = e.changedTouches[0];
+      novaTouchId = t.identifier;
       novaPressed = true;
       novaButton.classList.add('active');
       tryActivateNova();
@@ -1836,14 +1912,22 @@
 
     novaButton.addEventListener('touchend', (e) => {
       e.preventDefault();
+      if (novaTouchId === null) return;
+      const ended = findTouchById(e.changedTouches, novaTouchId);
+      if (!ended) return;
+      novaTouchId = null;
       novaPressed = false;
       novaButton.classList.remove('active');
     }, { passive: false });
 
-    novaButton.addEventListener('touchcancel', () => {
+    novaButton.addEventListener('touchcancel', (e) => {
+      if (novaTouchId === null) return;
+      const ended = findTouchById(e.changedTouches, novaTouchId);
+      if (!ended) return;
+      novaTouchId = null;
       novaPressed = false;
       novaButton.classList.remove('active');
-    });
+    }, { passive: false });
 
     // Prevent iOS pinch/gesture
     document.addEventListener('gesturestart', (e) => e.preventDefault());
